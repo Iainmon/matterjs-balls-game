@@ -26,6 +26,7 @@ class RenderRoutine {
     render() {
         push()
         translate(this.position.x, this.position.y)
+        angleMode(DEGREES)
         rotate(this.orientation)
 
         if (this.fill) {
@@ -41,8 +42,8 @@ class RenderRoutine {
             noStroke()
         }
 
-        rectMode(CENTER)
         ellipseMode(CENTER)
+        rectMode(CENTER)
 
         this.renderMethod(0, 0, this.dimensions.x * this.scale, this.dimensions.y * this.scale)
         pop()

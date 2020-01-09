@@ -1,4 +1,4 @@
-class Ball implements IEntity {
+class Square implements IEntity {
 
     public body: Matter.Body
 
@@ -16,7 +16,7 @@ class Ball implements IEntity {
             collisionFilter: collisionGroup.collisionFilter()
         }
 
-        const body = Matter.Bodies.circle(x, y, radius, options)
+        const body = Matter.Bodies.rectangle(x, y, radius, radius, options)
         Matter.World.add(world, body)
         
         const ballColors = Colors()
@@ -24,8 +24,9 @@ class Ball implements IEntity {
 
         const dimensions = { x: radius, y: radius } as IPosition
         const routine = new RenderRoutine(color, dimensions)
-        routine.scale = 2.0
+        routine.scale = 1.0
         routine.stroke = 4
+        routine.renderMethod = rect
         if (collisionGroup.interactionCategories.length >= 2) {
             routine.fill = true
             routine.stroke = 0

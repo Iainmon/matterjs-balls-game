@@ -1,8 +1,10 @@
 type EntityCategories = { [key: string]: Array<IEntity> }
 
-// const groups = [ 'red', 'green', 'blue', 'yellow', 'purple' ]
-const groups = [ 'red', 'green', 'blue' ]
+const groups = [ 'red', 'green', 'blue', 'yellow', 'purple' ]
+// const groups = [ 'red', 'green', 'blue' ]
 // const groups = [ 'red', 'blue' ]
+
+const objectScale = 0.5
 
 let nextColor: p5.Color
 
@@ -81,11 +83,22 @@ function mouseReleased() {
 }
 
 function keyPressed() {
+
+    // if (ballcount < 1) return
+
     if (keyCode == 81 || keyCode == 69) {
-        
+
         const group = rotateGroup()
         const collisionGroup = new CollisionGroup([group], keyCode == 81)
-        entities['hallowBalls'].push(new Ball(mouseX, mouseY, 100, collisionGroup))
+        entities['hallowBalls'].push(new Ball(mouseX, mouseY, 100 * objectScale, collisionGroup))
+
+        ballcount -= 1
+    }
+    if (keyCode == 65 || keyCode == 68) {
+
+        const group = rotateGroup()
+        const collisionGroup = new CollisionGroup([group], keyCode == 65)
+        entities['hallowBalls'].push(new Square(mouseX, mouseY, 200 * objectScale, collisionGroup))
 
         ballcount -= 1
     }

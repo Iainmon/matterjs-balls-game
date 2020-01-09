@@ -114,7 +114,7 @@ var Ball = (function () {
         var dimensions = { x: radius, y: radius };
         var routine = new RenderRoutine(color, dimensions);
         routine.scale = 2.0;
-        routine.stroke = 8;
+        routine.stroke = 4;
         if (collisionGroup.interactionCategories.length >= 2) {
             routine.fill = true;
             routine.stroke = 0;
@@ -128,7 +128,7 @@ var Ball = (function () {
         var position = this.body.position;
         this.routine.position.x = position.x;
         this.routine.position.y = position.y;
-        var angle = this.body.angle;
+        var angle = this.body.angle * (180 / PI);
         this.routine.orientation = angle;
         return this.routine;
     };
@@ -238,6 +238,7 @@ var RenderRoutine = (function () {
     RenderRoutine.prototype.render = function () {
         push();
         translate(this.position.x, this.position.y);
+        angleMode(DEGREES);
         rotate(this.orientation);
         if (this.fill) {
             fill(this.color);
@@ -252,14 +253,51 @@ var RenderRoutine = (function () {
         else {
             noStroke();
         }
-        rectMode(CENTER);
         ellipseMode(CENTER);
+        rectMode(CENTER);
         this.renderMethod(0, 0, this.dimensions.x * this.scale, this.dimensions.y * this.scale);
         pop();
     };
     return RenderRoutine;
 }());
-var groups = ['red', 'green', 'blue'];
+var Square = (function () {
+    function Square(x, y, radius, collisionGroup) {
+        if (collisionGroup === void 0) { collisionGroup = new CollisionGroup([]); }
+        this.fill = false;
+        var options = {
+            restitution: 0.5,
+            collisionFilter: collisionGroup.collisionFilter()
+        };
+        var body = Matter.Bodies.rectangle(x, y, radius, radius, options);
+        Matter.World.add(world, body);
+        var ballColors = Colors();
+        var color = ballColors[collisionGroup.interactionCategoryNames[0]];
+        var dimensions = { x: radius, y: radius };
+        var routine = new RenderRoutine(color, dimensions);
+        routine.scale = 1.0;
+        routine.stroke = 4;
+        routine.renderMethod = rect;
+        if (collisionGroup.interactionCategories.length >= 2) {
+            routine.fill = true;
+            routine.stroke = 0;
+        }
+        this.color = color;
+        this.radius = radius;
+        this.body = body;
+        this.routine = routine;
+    }
+    Square.prototype.show = function () {
+        var position = this.body.position;
+        this.routine.position.x = position.x;
+        this.routine.position.y = position.y;
+        var angle = this.body.angle * (180 / PI);
+        this.routine.orientation = angle;
+        return this.routine;
+    };
+    return Square;
+}());
+var groups = ['red', 'green', 'blue', 'yellow', 'purple'];
+var objectScale = 0.5;
 var nextColor;
 var engine = Matter.Engine.create();
 var world = engine.world;
@@ -319,7 +357,13 @@ function keyPressed() {
     if (keyCode == 81 || keyCode == 69) {
         var group = rotateGroup();
         var collisionGroup = new CollisionGroup([group], keyCode == 81);
-        entities['hallowBalls'].push(new Ball(mouseX, mouseY, 100, collisionGroup));
+        entities['hallowBalls'].push(new Ball(mouseX, mouseY, 100 * objectScale, collisionGroup));
+        ballcount -= 1;
+    }
+    if (keyCode == 65 || keyCode == 68) {
+        var group = rotateGroup();
+        var collisionGroup = new CollisionGroup([group], keyCode == 65);
+        entities['hallowBalls'].push(new Square(mouseX, mouseY, 200 * objectScale, collisionGroup));
         ballcount -= 1;
     }
 }
