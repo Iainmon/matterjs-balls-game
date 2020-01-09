@@ -82,7 +82,33 @@ function mouseReleased() {
     }
 }
 
+let penBrush1: any = null
+let penBrush2: any = null
+
 function keyPressed() {
+
+    if (keyCode == 80) {
+        if (!penBrush1) {
+            penBrush1 = setInterval( () => {
+                keyCode = 69
+                keyPressed()
+            }, 1000)
+            setTimeout( () => {
+                penBrush2 = setInterval( () => {
+                    keyCode = 65
+                    keyPressed()
+                }, 1000)
+            }, 200)
+        } else {
+
+            clearInterval(penBrush1)
+            clearInterval(penBrush2)
+
+            penBrush1 = null
+            penBrush2 = null
+        }
+
+    }
 
     // if (ballcount < 1) return
 

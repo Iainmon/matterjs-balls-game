@@ -353,7 +353,29 @@ function mouseReleased() {
         return;
     }
 }
+var penBrush1 = null;
+var penBrush2 = null;
 function keyPressed() {
+    if (keyCode == 80) {
+        if (!penBrush1) {
+            penBrush1 = setInterval(function () {
+                keyCode = 69;
+                keyPressed();
+            }, 1000);
+            setTimeout(function () {
+                penBrush2 = setInterval(function () {
+                    keyCode = 65;
+                    keyPressed();
+                }, 1000);
+            }, 200);
+        }
+        else {
+            clearInterval(penBrush1);
+            clearInterval(penBrush2);
+            penBrush1 = null;
+            penBrush2 = null;
+        }
+    }
     if (keyCode == 81 || keyCode == 69) {
         var group = rotateGroup();
         var collisionGroup = new CollisionGroup([group], keyCode == 81);
