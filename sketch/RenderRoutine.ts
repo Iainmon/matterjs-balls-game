@@ -7,21 +7,19 @@ class RenderRoutine {
 
     public color: p5.Color
 
-    public position: IPosition
+    public position: IPosition = { x: 0, y: 0 } as IPosition
     public dimensions: IPosition
     public orientation: number = 0
 
     public fill: boolean = false
-    public stroke: number | null = null
-    public strokeThickness: number = 6
+    public stroke: number = 0
 
     public scale: number = 1
 
     public renderMethod: any = ellipse
 
-    constructor(color: p5.Color, position: IPosition, dimensions: IPosition) {
+    constructor(color: p5.Color, dimensions: IPosition) {
         this.color = color
-        this.position = position
         this.dimensions = dimensions
     }
 
@@ -36,8 +34,8 @@ class RenderRoutine {
             noFill()
         }
 
-        if (stroke) {
-            strokeWeight(this.strokeThickness)
+        if (this.stroke > 0) {
+            strokeWeight(this.stroke)
             stroke(this.color)
         } else {
             noStroke()

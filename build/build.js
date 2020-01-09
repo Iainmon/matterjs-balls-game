@@ -107,32 +107,30 @@ var Ball = (function () {
             restitution: 0.5,
             collisionFilter: collisionGroup.collisionFilter()
         };
+        var body = Matter.Bodies.circle(x, y, radius, options);
+        Matter.World.add(world, body);
         var ballColors = Colors();
-        this.color = ballColors[collisionGroup.interactionCategoryNames[0]];
+        var color = ballColors[collisionGroup.interactionCategoryNames[0]];
+        var dimensions = { x: radius, y: radius };
+        var routine = new RenderRoutine(color, dimensions);
+        routine.scale = 2.0;
+        routine.stroke = 8;
         if (collisionGroup.interactionCategories.length >= 2) {
-            this.fill = true;
+            routine.fill = true;
+            routine.stroke = 0;
         }
-        this.body = Matter.Bodies.circle(x, y, radius, options);
-        Matter.World.add(world, this.body);
+        this.color = color;
         this.radius = radius;
+        this.body = body;
+        this.routine = routine;
     }
     Ball.prototype.show = function () {
         var position = this.body.position;
+        this.routine.position.x = position.x;
+        this.routine.position.y = position.y;
         var angle = this.body.angle;
-        push();
-        translate(position.x, position.y);
-        rotate(angle);
-        if (this.fill) {
-            fill(this.color);
-        }
-        else {
-            noFill();
-        }
-        strokeWeight(2);
-        stroke(this.color);
-        ellipseMode(CENTER);
-        ellipse(0, 0, this.radius * 2, this.radius * 2);
-        pop();
+        this.routine.orientation = angle;
+        return this.routine;
     };
     return Ball;
 }());
@@ -142,22 +140,23 @@ var Box = (function () {
         var options = {
             isStatic: isStatic
         };
-        this.body = Matter.Bodies.rectangle(x, y, width, height, options);
-        Matter.World.add(world, this.body);
-        this.width = width;
-        this.height = height;
+        var body = Matter.Bodies.rectangle(x, y, width, height, options);
+        Matter.World.add(world, body);
+        var dimensions = { x: width, y: height };
+        var routine = new RenderRoutine(Colors()['default'], dimensions);
+        routine.fill = true;
+        routine.stroke = 0;
+        routine.renderMethod = rect;
+        this.body = body;
+        this.routine = routine;
     }
     Box.prototype.show = function () {
-        var pos = this.body.position;
+        var position = this.body.position;
+        this.routine.position.x = position.x;
+        this.routine.position.y = position.y;
         var angle = this.body.angle;
-        push();
-        translate(pos.x, pos.y);
-        rotate(angle);
-        fill(255);
-        rectMode(CENTER);
-        imageMode(CENTER);
-        rect(0, 0, this.width, this.height);
-        pop();
+        this.routine.orientation = angle;
+        return this.routine;
     };
     return Box;
 }());
@@ -215,11 +214,6 @@ var CollisionGroup = (function () {
     CollisionGroup.lastCategoryBitField = 0x0001;
     return CollisionGroup;
 }());
-var ColloredObject = (function () {
-    function ColloredObject() {
-    }
-    return ColloredObject;
-}());
 var Colors = function () {
     var colors = {};
     colors.red = color('#C44D58');
@@ -231,15 +225,14 @@ var Colors = function () {
     return colors;
 };
 var RenderRoutine = (function () {
-    function RenderRoutine(color, position, dimensions) {
+    function RenderRoutine(color, dimensions) {
+        this.position = { x: 0, y: 0 };
         this.orientation = 0;
         this.fill = false;
-        this.stroke = null;
-        this.strokeThickness = 6;
+        this.stroke = 0;
         this.scale = 1;
         this.renderMethod = ellipse;
         this.color = color;
-        this.position = position;
         this.dimensions = dimensions;
     }
     RenderRoutine.prototype.render = function () {
@@ -252,8 +245,8 @@ var RenderRoutine = (function () {
         else {
             noFill();
         }
-        if (stroke) {
-            strokeWeight(this.strokeThickness);
+        if (this.stroke > 0) {
+            strokeWeight(this.stroke);
             stroke(this.color);
         }
         else {
@@ -266,28 +259,39 @@ var RenderRoutine = (function () {
     };
     return RenderRoutine;
 }());
-var colors = {};
+var groups = ['red', 'green', 'blue'];
+var nextColor;
 var engine = Matter.Engine.create();
 var world = engine.world;
-var solidBalls = Array();
-var hallowBalls = Array();
-var ground;
-var groundBoundries = [];
-var renderCategories;
-var setupColors = function () {
-    colors.background = color(2, 43, 58);
-    colors.tickmarks = color(232, 233, 243);
-    colors.second = color(210, 160, 42);
-    colors.minute = color(31, 140, 147);
-    colors.hour = color(202, 219, 192);
-};
+var entities = {};
+var font;
+var ballcount = 50;
 var showFramerate = function () {
     var fps = frameRate();
     fill(255);
     stroke(0);
-    text("FPS: " + fps.toFixed(2), 10, 20);
+    text('FPS: ' + fps.toFixed(2), 10, 20);
+};
+var drawUserInterface = function () {
+    push();
+    textFont(font);
+    textSize(width * 0.03);
+    textAlign(RIGHT, CENTER);
+    noStroke();
+    fill(nextColor);
+    text(ballcount + ' remaining balls', width - 40, 40);
+    pop();
 };
 var nextGroup = 0;
+var preload = function () {
+    font = loadFont('assets/nunito.ttf');
+};
+var rotateGroup = function () {
+    var group = groups[nextGroup];
+    nextGroup = (nextGroup + 1) % groups.length;
+    nextColor = Colors()[groups[nextGroup]];
+    return group;
+};
 var setup = function () {
     var canvas = createCanvas(windowWidth, windowHeight);
     translate(width / 2, height / 2);
@@ -297,46 +301,38 @@ var setup = function () {
     mouse.pixelRatio = pixelDensity();
     var mouseConstraint = Matter.MouseConstraint.create(engine, options);
     Matter.World.add(world, mouseConstraint);
-    ground = new Box(width / 2, height - 10, width, 20, true);
-    groundBoundries.push(new Box(0, height - 30, 20, 60, true));
-    groundBoundries.push(new Box(width, height - 30, 20, 60, true));
+    nextColor = Colors()[groups[nextGroup]];
+    entities['solidBalls'] = new Array();
+    entities['hallowBalls'] = new Array();
+    entities['ground'] = new Array();
+    entities['ground'].push(new Box(width / 2, height - 10, width, 20, true));
+    entities['ground'].push(new Box(0, height - 30, 20, 60, true));
+    entities['ground'].push(new Box(width, height - 30, 20, 60, true));
 };
 function mouseReleased() {
-    var mouseLocation = {};
-    mouseLocation.x = mouseX / width;
-    mouseLocation.y = mouseY / height;
-    var groups = ['red', 'green', 'blue', 'yellow', 'purple'];
-    var group = groups[nextGroup];
     if (keyIsDown(CONTROL)) {
-        groundBoundries.push(new Box(mouseX, mouseY, 20, 20, true));
+        entities['ground'].push(new Box(mouseX, mouseY, 20, 20, true));
         return;
     }
-    else if (keyIsDown(OPTION)) {
-        var collisionGroup = new CollisionGroup([group], false);
-        hallowBalls.push(new Ball(mouseX, mouseY, 100, collisionGroup));
+}
+function keyPressed() {
+    if (keyCode == 81 || keyCode == 69) {
+        var group = rotateGroup();
+        var collisionGroup = new CollisionGroup([group], keyCode == 81);
+        entities['hallowBalls'].push(new Ball(mouseX, mouseY, 100, collisionGroup));
+        ballcount -= 1;
     }
-    else {
-        var collisionGroup = new CollisionGroup([group], true);
-        solidBalls.push(new Ball(mouseX, mouseY, 100, collisionGroup));
-    }
-    nextGroup = (nextGroup + 1) % groups.length;
 }
 var draw = function () {
     Matter.Engine.update(engine);
     background(17, 17, 17);
-    for (var _i = 0, solidBalls_1 = solidBalls; _i < solidBalls_1.length; _i++) {
-        var ball = solidBalls_1[_i];
-        ball.show();
+    for (var entityGroup in entities) {
+        for (var _i = 0, _a = entities[entityGroup]; _i < _a.length; _i++) {
+            var entity = _a[_i];
+            entity.show().render();
+        }
     }
-    for (var _a = 0, hallowBalls_1 = hallowBalls; _a < hallowBalls_1.length; _a++) {
-        var ball = hallowBalls_1[_a];
-        ball.show();
-    }
-    for (var _b = 0, groundBoundries_1 = groundBoundries; _b < groundBoundries_1.length; _b++) {
-        var groundBound = groundBoundries_1[_b];
-        groundBound.show();
-    }
-    ground.show();
+    drawUserInterface();
     showFramerate();
 };
 function windowResized() {

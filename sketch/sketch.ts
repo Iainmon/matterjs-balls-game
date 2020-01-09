@@ -1,32 +1,51 @@
+type EntityCategories = { [key: string]: Array<IEntity> }
 
-const colors: any = {}
+// const groups = [ 'red', 'green', 'blue', 'yellow', 'purple' ]
+const groups = [ 'red', 'green', 'blue' ]
+// const groups = [ 'red', 'blue' ]
+
+let nextColor: p5.Color
 
 const engine = Matter.Engine.create()
 const world = engine.world
 
-const solidBalls = Array<Ball>()
-const hallowBalls = Array<Ball>()
+const entities: EntityCategories = {}
 
-let ground: Box
-let groundBoundries: Box[] = []
+let font: p5.Font
+let ballcount = 50
 
-let renderCategories: Map
-
-const setupColors = () => {
-    colors.background = color(2, 43, 58)
-    colors.tickmarks = color(232, 233, 243)
-
-    colors.second = color(210, 160, 42)
-    colors.minute = color(31, 140, 147)
-    colors.hour = color(202, 219, 192)
-}
 const showFramerate = function () {
     const fps = frameRate();
-    fill(255);
-    stroke(0);
-    text("FPS: " + fps.toFixed(2), 10, 20);
+    fill(255)
+    stroke(0)
+    text('FPS: ' + fps.toFixed(2), 10, 20)
+}
+
+const drawUserInterface = function () {
+    push()
+    textFont(font)
+    textSize(width * 0.03)
+    textAlign(RIGHT, CENTER)
+    noStroke()
+    fill(nextColor)
+
+    text(ballcount + ' remaining balls', width - 40, 40)
+    pop()
+
 }
 let nextGroup = 0
+
+
+const preload = () => {
+    font = loadFont('assets/nunito.ttf')
+}
+
+const rotateGroup = () => {
+    const group = groups[nextGroup]
+    nextGroup = (nextGroup + 1) % groups.length
+    nextColor = Colors()[groups[nextGroup]]
+    return group
+}
 
 const setup = () => {
     const canvas = createCanvas(windowWidth, windowHeight)
@@ -39,42 +58,37 @@ const setup = () => {
     const mouseConstraint = Matter.MouseConstraint.create(engine, options)
     Matter.World.add(world, mouseConstraint)
 
+    nextColor = Colors()[groups[nextGroup]]
     
-    ground = new Box(width / 2, height - 10, width, 20, true)
+    entities['solidBalls'] = new Array<Ball>()
+    entities['hallowBalls'] = new Array<Ball>()
 
-    groundBoundries.push(new Box(0, height - 30, 20, 60, true))
-    groundBoundries.push(new Box(width, height - 30, 20, 60, true))
+    entities['ground'] = new Array<Box>()
+
+    entities['ground'].push(new Box(width / 2, height - 10, width, 20, true))
+
+    entities['ground'].push(new Box(0, height - 30, 20, 60, true))
+    entities['ground'].push(new Box(width, height - 30, 20, 60, true))
 
 }
 
 
 function mouseReleased() {
-
-    const mouseLocation: any = { }
-    mouseLocation.x = mouseX / width
-    mouseLocation.y = mouseY / height
-
-    const groups = [ 'red', 'green', 'blue', 'yellow', 'purple' ]
-    // const groups = [ 'red', 'blue' ]
-
-    const group = groups[nextGroup]
-
-
     if (keyIsDown(CONTROL)) {
-        groundBoundries.push(new Box(mouseX, mouseY, 20, 20, true))
+        entities['ground'].push(new Box(mouseX, mouseY, 20, 20, true))
         return
-    } else if (keyIsDown(OPTION)) {
-        const collisionGroup = new CollisionGroup([group], false)
-        hallowBalls.push(new Ball(mouseX, mouseY, 100, collisionGroup))
-
-    } else {
-        const collisionGroup = new CollisionGroup([group], true)
-        solidBalls.push(new Ball(mouseX, mouseY, 100, collisionGroup))
-
     }
+}
 
+function keyPressed() {
+    if (keyCode == 81 || keyCode == 69) {
+        
+        const group = rotateGroup()
+        const collisionGroup = new CollisionGroup([group], keyCode == 81)
+        entities['hallowBalls'].push(new Ball(mouseX, mouseY, 100, collisionGroup))
 
-    nextGroup = (nextGroup + 1) % groups.length
+        ballcount -= 1
+    }
 }
 
 const draw = () => {
@@ -85,26 +99,31 @@ const draw = () => {
     // translate(width / 2, height / 2)
 
 
-    // TODO: draw hallow balls after solid balls
-    // TODO: Despawn balls that are off the screen
-    // TODO: add next color identifier in UI
     // TODO: Make masses of balls different
     // TODO: make challenging game mechanic
-    // TODO: make balls gro when spawned
+    // TODO: make balls grow when spawned
     // TODO: add dashed ball
-    for (const ball of solidBalls) {
-        ball.show()
-    }
-    for (const ball of hallowBalls) {
-        ball.show()
+    // for (const ball of solidBalls) {
+    //     ball.show()
+    // }
+    // for (const ball of hallowBalls) {
+    //     ball.show()
+    // }
+
+    // for (const groundBound of groundBoundries) {
+    //     groundBound.show()
+    // }
+    
+    // ground.show()
+    
+    for (const entityGroup in entities) {
+        for (const entity of entities[entityGroup]) {
+            entity.show().render()
+        }
     }
 
-    for (const groundBound of groundBoundries) {
-        groundBound.show()
-    }
-    
-    ground.show()
-    
+    drawUserInterface()
+
     showFramerate()
 }
 

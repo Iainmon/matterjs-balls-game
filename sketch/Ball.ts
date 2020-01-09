@@ -1,4 +1,4 @@
-class Ball {
+class Ball implements IEntity {
 
     public body: Matter.Body
 
@@ -8,51 +8,44 @@ class Ball {
 
     public fill = false
 
+    routine: RenderRoutine
+
     constructor(x: number, y: number, radius: number, collisionGroup: CollisionGroup = new CollisionGroup([])) {
         const options = {
             restitution: 0.5,
             collisionFilter: collisionGroup.collisionFilter()
         }
 
+        const body = Matter.Bodies.circle(x, y, radius, options)
+        Matter.World.add(world, body)
+        
         const ballColors = Colors()
-        this.color = ballColors[collisionGroup.interactionCategoryNames[0]]
+        const color = ballColors[collisionGroup.interactionCategoryNames[0]]
 
-        // if (collisionGroup.interactionCategories.length < 2) {
-        //     options.collisionFilter.category = collisionGroup.interactionCategories[0]
-        // } else {
-        //     options.collisionFilter.mask = collisionGroup.encodeGroup()
-        //     this.fill = true
-        // }
-
+        const dimensions = { x: radius, y: radius } as IPosition
+        const routine = new RenderRoutine(color, dimensions)
+        routine.scale = 2.0
+        routine.stroke = 8
         if (collisionGroup.interactionCategories.length >= 2) {
-            this.fill = true
+            routine.fill = true
+            routine.stroke = 0
         }
 
-        this.body = Matter.Bodies.circle(x, y, radius, options)
-        Matter.World.add(world, this.body)
+        this.color = color
         this.radius = radius
-
+        this.body = body
+        this.routine = routine
     }
 
-    public show() {
+    public show(): RenderRoutine {
+
         const position = this.body.position
+        this.routine.position.x = position.x
+        this.routine.position.y = position.y
+
         const angle = this.body.angle
-        push()
-        translate(position.x, position.y)
-        rotate(angle)
+        this.routine.orientation = angle
 
-        if (this.fill) {
-            fill(this.color)
-        } else {
-            noFill()
-        }
-        strokeWeight(2)
-        stroke(this.color)
-
-        ellipseMode(CENTER)
-        // imageMode(CENTER)
-        ellipse(0, 0, this.radius * 2, this.radius * 2)
-        pop()
-
+        return this.routine
     }
 }
